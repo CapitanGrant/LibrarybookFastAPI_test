@@ -59,11 +59,11 @@ async def test_create_object(url_create, payload, url_delete):
 @pytest.mark.parametrize("obj_type", ["author", "book", "borrow"])
 async def test_get_object_by_id(obj_type, obj_id):
     '''Тест на получение объекта по ID.'''
-    url = "http://127.0.0.1:8000/{}/get_{}_by_id/?id="
+    url = f"http://127.0.0.1:8000/{obj_type}/get_{obj_type}_by_id/?id="
     get_object = GetObjectByID()
-    await get_object.get_object_by_id(url=url.format(obj_type, obj_type), object_id=obj_id)
+    await get_object.get_object_by_id(url, object_id=obj_id)
     get_object.check_response_is_200()
-    await get_object.get_object_by_id(url=url.format(obj_type, obj_type), object_id=9999)
+    await get_object.get_object_by_id(url, object_id=9999)
     get_object.check_response_is_404()
 
 
@@ -72,7 +72,7 @@ async def test_get_object_by_id(obj_type, obj_id):
 async def test_update_object(obj_type, obj_id):
     '''Тест на обновленипе объекта по ID.'''
     update_object = UpdateObjectByID()
-    url = "http://127.0.0.1:8000/{}/update_{}_by_id"
+    url = f"http://127.0.0.1:8000/{obj_type}/update_{obj_type}_by_id"
     if obj_type == "author":
         payload_author = {
             "author_id": {
@@ -84,7 +84,7 @@ async def test_update_object(obj_type, obj_id):
                 "date_of_birth": "2024-12-12"
             }
         }
-        await update_object.update_object_by_id(url=url.format(obj_type, obj_type), payload=payload_author)
+        await update_object.update_object_by_id(url, payload=payload_author)
     elif obj_type == "book":
         payload_book = {
             "book_id": {
@@ -97,7 +97,7 @@ async def test_update_object(obj_type, obj_id):
                 "book_count": 4
             }
         }
-        await update_object.update_object_by_id(url=url.format(obj_type, obj_type), payload=payload_book)
+        await update_object.update_object_by_id(url, payload=payload_book)
     elif obj_type == "borrow":
         payload_borrow = {
             "id": {
@@ -107,6 +107,6 @@ async def test_update_object(obj_type, obj_id):
                 "return_date": "2024-12-15"
             }
         }
-        await update_object.update_object_by_id(method="PATCH", url=url.format(obj_type, obj_type),
+        await update_object.update_object_by_id(method="PATCH", url=url,
                                                 payload=payload_borrow)
     update_object.check_response_is_200()
