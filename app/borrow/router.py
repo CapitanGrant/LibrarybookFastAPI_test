@@ -7,7 +7,7 @@ from app.borrow.dao import BorrowDAO
 from app.borrow.schemas import SBorrowCreate, SBorrowID, SBorrowUpdateReturnDate
 from app.dao.session_maker import SessionDep, TransactionSessionDep
 from loguru import logger
-# uvicorn app.main:app --port 8000
+
 
 router = APIRouter(prefix="/borrow", tags=["Borrows"])
 
@@ -46,7 +46,6 @@ async def create_borrow(borrow_data: SBorrowCreate, session: AsyncSession = Tran
 @router.patch('/update_borrow_by_id/', summary='Обновление статуса выданной книги')
 async def update_borrow(id: SBorrowID, update_data: SBorrowUpdateReturnDate,
                         session: AsyncSession = TransactionSessionDep):
-    #
     rez = await BorrowDAO.update(session=session, filters=id, values=update_data)
     if rez is None:
         return {'message': f'Не удалось обновить запись!'}
