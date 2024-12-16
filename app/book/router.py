@@ -5,7 +5,6 @@ from app.book.schemas import SBook, SBookFilter, SBookID
 from app.book.dao import BookDAO
 from app.dao.session_maker import SessionDep, TransactionSessionDep
 
-# uvicorn app.main:app --port 8000
 
 router = APIRouter(prefix="/book", tags=["Book"])
 
