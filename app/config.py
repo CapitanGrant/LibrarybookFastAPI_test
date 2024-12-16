@@ -10,14 +10,6 @@ DB_PORT = os.getenv("DB_PORT")
 DB_NAME = os.getenv("DB_NAME")
 
 
-class RedisConfig:
-    host = os.getenv("REDIS_HOST")
-    port = os.getenv("REDIS_PORT")
-    decode_responses = True
-
-
-redis_config = RedisConfig()
-
 
 class Settings(BaseSettings):
     BASE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
