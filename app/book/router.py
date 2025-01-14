@@ -1,10 +1,13 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.book.schemas import SBook, SBookFilter, SBookID
 from app.book.dao import BookDAO
 from app.dao.session_maker import SessionDep, TransactionSessionDep
+from app.users.auth import get_current_admin_user
+from app.users.models import User
 
+# uvicorn app.main:app --port 8000
 
 router = APIRouter(prefix="/book", tags=["Book"])
 
@@ -23,7 +26,8 @@ async def get_book_by_id(id: int, session: AsyncSession = SessionDep):
 
 
 @router.post("/create_book/", summary='Добавление книги')
-async def create_book(book_data: SBook, session: AsyncSession = TransactionSessionDep):
+async def create_book(book_data: SBook, user_data: User = Depends(get_current_admin_user),
+                      session: AsyncSession = TransactionSessionDep):
     rez = await BookDAO.find_one_or_none(session=session, filters=SBookFilter(book_name=book_data.book_name))
     if rez:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Книга уже существует!")
@@ -33,7 +37,7 @@ async def create_book(book_data: SBook, session: AsyncSession = TransactionSessi
 
 
 @router.put('/update_book_by_id/', summary='Обновление книги по ID')
-async def update_book(book_id: SBookID, update_data: SBook,
+async def update_book(book_id: SBookID, update_data: SBook, user_data: User = Depends(get_current_admin_user),
                       session: AsyncSession = TransactionSessionDep):
     rez = await BookDAO.update(session=session, filters=book_id, values=update_data)
     if rez is None:
@@ -42,7 +46,8 @@ async def update_book(book_id: SBookID, update_data: SBook,
 
 
 @router.delete('/delete_book_by_id/', summary='Удаление книги по ID')
-async def delete_book(book_id: SBookID, session: AsyncSession = TransactionSessionDep):
+async def delete_book(book_id: SBookID, user_data: User = Depends(get_current_admin_user),
+                      session: AsyncSession = TransactionSessionDep):
     rez = await BookDAO.delete(session=session, filters=book_id)
     if rez is None:
         return {'message': f'Не удалось удалить книгу!'}

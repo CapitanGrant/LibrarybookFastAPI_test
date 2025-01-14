@@ -11,6 +11,7 @@ class Author(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     first_name: Mapped[str] = mapped_column(String, nullable=False)
     last_name: Mapped[str] = mapped_column(String, nullable=False)
+    biography: Mapped[str] = mapped_column(String, nullable=True)
     date_of_birth: Mapped[datetime] = mapped_column(Date, nullable=False)
 
     books: Mapped[list['Book']] = relationship("Book", back_populates="author")

@@ -14,6 +14,7 @@ from app.dao.database import Base
 from app.book.models import Book
 from app.author.models import Author
 from app.borrow.models import Borrow
+from app.users.models import User
 
 config = context.config
 config.set_main_option("sqlalchemy.url", database_url)

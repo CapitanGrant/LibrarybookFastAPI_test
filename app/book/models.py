@@ -1,4 +1,6 @@
-from sqlalchemy import Integer, String, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.borrow.models import Borrow
@@ -11,6 +13,7 @@ class Book(Base):
     book_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     author_id: Mapped[int] = mapped_column(Integer, ForeignKey('author.id'), nullable=False)
     book_description: Mapped[str] = mapped_column(String, nullable=False)
+    date_published: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     book_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     author: Mapped['Author'] = relationship('Author', back_populates='books')

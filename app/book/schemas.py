@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from datetime import datetime, date
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class SBook(BaseModel):
@@ -11,7 +13,15 @@ class SBook(BaseModel):
         ge=0,
         description="Количество доступных экземпляров книги (неотрицательное число)"
     )
+    date_published: date = Field(..., description='Дата публикации книги')
 
+    @field_validator("date_published")
+    @classmethod
+    def validate_date_in_past(cls, value: date) -> date:
+        if value > datetime.now().date():
+            raise ValueError(
+                f'Дата не должна быть в будущем, текущая дата: {datetime.now().date()}, введенная дата: {value}')
+        return value
 
 class SBookFilter(BaseModel):
     book_name: str = Field(..., min_length=2, max_length=50, description="Название книги, от 2 до 50 символов")

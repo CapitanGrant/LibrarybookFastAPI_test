@@ -1,12 +1,13 @@
 from datetime import date
 
 from pydantic import BaseModel
-from sqlalchemy import update
+from sqlalchemy import update, func
 from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.author.models import Author
 from app.book.models import Book
 from app.dao.base import BaseDAO
 from app.borrow.models import Borrow
@@ -91,3 +92,38 @@ class BorrowDAO(BaseDAO):
         else:
             logger.info("Ошибка: Не предоставлено значение для return_date.")
             return "Не предоставлено значение для return_date."
+
+    @classmethod
+    async def find_all_reader_name(cls, session: AsyncSession, filters: BaseModel | None):
+        if filters:
+            filter_dict = filters.model_dump(exclude_unset=True)
+        else:
+            filter_dict = {}
+        logger.info(f"Поиск всех записей {cls.model.__name__} по фильтрам: {filter_dict}")
+        try:
+            query = (
+                select(cls.model.reader_name, Book.book_name, Author.first_name, Author.last_name,
+                       func.count(cls.model.id))
+                .join(Book, cls.model.book_id == Book.id)
+                .join(Author, Book.author_id == Author.id)
+                .group_by(cls.model.reader_name, Book.book_name, Author.first_name, Author.last_name)
+            )
+            if filter_dict:
+                query = query.filter_by(**filter_dict)
+            result = await session.execute(query)
+            records = result.all()
+            response = {}
+            for reader_name, book_name, author_first_name, author_last_name, borrow_count in records:
+                if reader_name not in response:
+                    response[reader_name] = []
+                response[reader_name].append({
+                    "Название книги": book_name,
+                    "Автор Книги": f"{author_first_name} {author_last_name}",
+                    "Количество взятых книг": borrow_count,
+                })
+
+            logger.info(f"Найдено {len(response)} уникальных читателей.")
+            return response
+        except SQLAlchemyError as e:
+            logger.error(f"Ошибка при поиске всех записей по фильтрам {filter_dict}: {e}")
+            raise
