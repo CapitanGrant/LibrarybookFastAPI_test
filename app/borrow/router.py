@@ -9,7 +9,7 @@ from loguru import logger
 from app.users.auth import get_current_admin_user, get_current_user
 from app.users.models import User
 
-# uvicorn app.main:app --port 8000
+# uvicorn app.main:app --port 8001
 
 router = APIRouter(prefix="/borrow", tags=["Borrows"])
 
@@ -19,7 +19,7 @@ async def get_all_borrows(user_data: User = Depends(get_current_admin_user), ses
     return await BorrowDAO.find_all(session=session, filters=None)
 
 
-@router.get("/all_reader/", summary='Получить список все читателей')
+@router.get("/all_reader/", summary='Получить список всех читателей')
 async def get_all_borrows(user_data: User = Depends(get_current_admin_user), session: AsyncSession = SessionDep):
     return await BorrowDAO.find_all_reader_name(session=session, filters=None)
 
@@ -47,6 +47,8 @@ async def create_borrow(borrow_data: SBorrowCreate, user_data: User = Depends(ge
     except SQLAlchemyError as e:
         logger.error(f"Ошибка при работе с базой данных: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка базы данных.")
+    except HTTPException as e:
+        raise e
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Ошибка: {str(e)}")

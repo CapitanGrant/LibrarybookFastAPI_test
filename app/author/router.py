@@ -1,19 +1,53 @@
 from fastapi import APIRouter, HTTPException, status
-from fastapi.params import Depends
+from fastapi.params import Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from loguru import logger
 from app.author.dao import AuthorDAO
+from app.author.models import Author
 from app.author.schemas import SAuthorBase, SAuthorFilter, SAuthorID
 from app.dao.session_maker import SessionDep, TransactionSessionDep
 from app.users.auth import get_current_admin_user, get_current_user
 from app.users.models import User
+from sqlalchemy.future import select
 
 router = APIRouter(prefix="/author", tags=["Author"])
 
 
-@router.get("/all_authors/", summary='Получить список всех авторов книг')
-async def get_all_authors(user_data: User = Depends(get_current_user), session: AsyncSession = SessionDep):
-    return await AuthorDAO.find_all(session=session, filters=None)
+@router.get("/all_authors/", summary='Получить список всех авторов книг с пагинацией и фильтрацией')
+async def get_all_authors(page: int = Query(1, ge=1, description="Номер страницы (начиная с 1)"),
+                          size: int = Query(10, ge=1, le=100, description="Количество авторов на странице (максимум 100)"),
+                          first_name: str| None = Query(None, description="Фильтр по имени автора"),
+                          last_name: str | None = Query(None, description="Фильтр по фамилии автора"),
+                          user_data: User = Depends(get_current_user), session: AsyncSession = SessionDep):
+    try:
+        query = select(Author)
+        if first_name:
+            query = query.where(Author.first_name.ilike(f"%{first_name}%"))
+        if last_name:
+            query = query.where(Author.last_name.ilike(f"%{last_name}%"))
+        total_authors = (await session.execute(query)).scalars().all()
+        total_pages = (len(total_authors) + size - 1) // size
+        query = query.offset((page - 1) * size).limit(size)
+        result = await session.execute(query)
+        authors = result.scalars().all()
+        return {
+            "total_pages": total_pages,
+            "current_page": page,
+            "authors": [
+                {
+                    "id": author.id,
+                    "first_name": author.first_name,
+                    "last_name": author.last_name,
+                    "biography": author.biography,
+                }
+                for author in authors
+            ],
+        }
+    except Exception as e:
+        logger.error(f"Ошибка при получении списка авторов: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Произошла ошибка при получении списка авторов."
+        )
 
 
 @router.get("/get_author_by_id/", summary='Получить автора по id')

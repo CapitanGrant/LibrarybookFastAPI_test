@@ -1,20 +1,51 @@
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.params import Query
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.future import select
 from app.book.schemas import SBook, SBookFilter, SBookID
 from app.book.dao import BookDAO
 from app.dao.session_maker import SessionDep, TransactionSessionDep
-from app.users.auth import get_current_admin_user
+from app.users.auth import get_current_admin_user, get_current_user
 from app.users.models import User
+from app.book.models import Book
+from loguru import logger
 
-# uvicorn app.main:app --port 8000
+# uvicorn app.main:app --port 8001
 
 router = APIRouter(prefix="/book", tags=["Book"])
 
 
 @router.get('/all_books/', summary='Получение списка книг')
-async def get_all_books(session: AsyncSession = SessionDep):
-    return await BookDAO.find_all(session=session, filters=None)
+async def get_all_books(page: int = Query(1, ge=1, description="Номер страницы (начиная с 1)"),
+                        size: int = Query(10, ge=1, le=100, description="Количество книг на странице (максимум 100)"),
+                        book_name: str | None = Query(None, description="Фильтр по названию книги"),
+                        user_data: User = Depends(get_current_user), session: AsyncSession = SessionDep):
+    try:
+        query = select(Book)
+        if book_name:
+            query = query.where(Book.book_name.ilike(f"%{book_name}%"))
+        total_books = (await session.execute(query)).scalars().all()
+        total_pages = (len(total_books) + size - 1) // size
+        query = query.offset((page - 1) * size).limit(size)
+        result = await session.execute(query)
+        books = result.scalars().all()
+        return {
+            "total_pages": total_pages,
+            "current_page": page,
+            "books": [
+                {
+                    'id': book.id,
+                    'book_name': book.book_name,
+                    'description': book.book_description,
+                }
+                for book in books
+            ],
+        }
+    except Exception as e:
+        logger.error(f"Ошибка при получении списка книг: {str(e)}")
+        raise HTTPException(status_code=500, detail="Произошла ошибка при получении списка книг.")
+
+    # return await BookDAO.find_all(session=session, filters=None)
 
 
 @router.get('/get_book_by_id/', summary='Получение информации о книге по ID')

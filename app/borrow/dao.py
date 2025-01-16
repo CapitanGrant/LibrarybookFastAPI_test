@@ -1,5 +1,4 @@
-from datetime import date
-
+from fastapi import HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import update, func
 from sqlalchemy import update as sqlalchemy_update
@@ -26,23 +25,31 @@ class BorrowDAO(BaseDAO):
         new_instance = cls.model(**values_dict)
         session.add(new_instance)
         try:
-            current_book_count = await session.execute(select(Book.book_count).where(Book.id == new_instance.book_id))
-            current_book_count = current_book_count.scalar()
+            books_borrowed_count_query = select(func.count(Borrow.id)).where(
+                Borrow.reader_name == new_instance.reader_name, Borrow.return_date == None)
+            books_borrowed_count = (await session.execute(books_borrowed_count_query)).scalar()
+            if books_borrowed_count >= 5:
+                raise ValueError(f"Пользователь {new_instance.reader_name} уже взял максимальное количество книг (5).")
+            current_book_count_query = select(Book.book_count).where(Book.id == new_instance.book_id)
+            current_book_count = (await session.execute(current_book_count_query)).scalar()
             if current_book_count - 1 < 0:
-                raise ValueError(
-                    f"Количество выданных книг с ID {new_instance.book_id} не может быть меньше 0, попробуйте получить другую книгу")
-            await session.flush()
+                raise ValueError(f"Книга с ID {new_instance.book_id} больше недоступна для выдачи.")
             await session.execute(
                 update(Book)
                 .where(Book.id == new_instance.book_id)
                 .values(book_count=Book.book_count - 1)
             )
+            await session.flush()
             await session.commit()
             logger.info(f"Запись {cls.model.__name__} и обновление book_count успешно выполнены.")
         except SQLAlchemyError as e:
             await session.rollback()
             logger.error(f"Ошибка при добавлении записи: {e}")
             raise e
+        except ValueError as e:
+            await session.rollback()
+            logger.error(f"Ошибка при добавлении записи: {e}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
         return new_instance
 
     @classmethod
