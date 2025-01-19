@@ -9,7 +9,7 @@ from loguru import logger
 from app.users.auth import get_current_admin_user, get_current_user
 from app.users.models import User
 
-# uvicorn app.main:app --port 8001
+# uvicorn app.main:app --port 8000
 
 router = APIRouter(prefix="/borrow", tags=["Borrows"])
 

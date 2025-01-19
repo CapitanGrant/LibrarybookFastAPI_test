@@ -10,7 +10,7 @@ from app.users.models import User
 from app.book.models import Book
 from loguru import logger
 
-# uvicorn app.main:app --port 8001
+# uvicorn app.main:app --port 8000
 
 router = APIRouter(prefix="/book", tags=["Book"])
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/book", tags=["Book"])
 async def get_all_books(page: int = Query(1, ge=1, description="Номер страницы (начиная с 1)"),
                         size: int = Query(10, ge=1, le=100, description="Количество книг на странице (максимум 100)"),
                         book_name: str | None = Query(None, description="Фильтр по названию книги"),
-                        user_data: User = Depends(get_current_user), session: AsyncSession = SessionDep):
+                        session: AsyncSession = SessionDep):
     try:
         query = select(Book)
         if book_name:

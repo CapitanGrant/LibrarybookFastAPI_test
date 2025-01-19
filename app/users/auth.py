@@ -1,6 +1,6 @@
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from loguru import logger
 from app.dao.session_maker import SessionDep
 from app.users.models import User
 from app.users.schemas import SUserMail
@@ -31,7 +31,6 @@ async def authenticate_user(email: SUserMail, password: str, session: AsyncSessi
 
 def get_token(request: Request):
     token = request.cookies.get('users_access_token')
-    print(token)
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Token not found')
     return token
@@ -63,3 +62,12 @@ async def get_current_admin_user(current_user: User = Depends(get_current_user))
     if current_user.is_admin:
         return current_user
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Недостаточно прав!')
+
+async def get_current_super_admin_user(current_user: User = Depends(get_current_admin_user)):
+    # if current_user.is_super_admin:
+    #     return current_user
+    # raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Недостаточно прав!')
+    logger.info(f"Super admin check: user_id={current_user.id}, is_super_admin={getattr(current_user, 'is_super_admin', None)}")
+    if getattr(current_user, "is_super_admin", False):
+        return current_user
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недостаточно прав!")

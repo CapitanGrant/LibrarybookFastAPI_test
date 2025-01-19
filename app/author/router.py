@@ -15,10 +15,11 @@ router = APIRouter(prefix="/author", tags=["Author"])
 
 @router.get("/all_authors/", summary='Получить список всех авторов книг с пагинацией и фильтрацией')
 async def get_all_authors(page: int = Query(1, ge=1, description="Номер страницы (начиная с 1)"),
-                          size: int = Query(10, ge=1, le=100, description="Количество авторов на странице (максимум 100)"),
-                          first_name: str| None = Query(None, description="Фильтр по имени автора"),
+                          size: int = Query(10, ge=1, le=100,
+                                            description="Количество авторов на странице (максимум 100)"),
+                          first_name: str | None = Query(None, description="Фильтр по имени автора"),
                           last_name: str | None = Query(None, description="Фильтр по фамилии автора"),
-                          user_data: User = Depends(get_current_user), session: AsyncSession = SessionDep):
+                          session: AsyncSession = SessionDep):
     try:
         query = select(Author)
         if first_name:

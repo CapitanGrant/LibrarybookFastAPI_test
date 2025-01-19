@@ -3,7 +3,7 @@ from sqlalchemy.orm import SessionTransaction
 from sqlalchemy.orm.sync import update
 
 from app.dao.session_maker import TransactionSessionDep, SessionDep
-from app.users.auth import get_password_hash, authenticate_user, get_current_user, get_current_admin_user
+from app.users.auth import get_password_hash, authenticate_user, get_current_user, get_current_super_admin_user
 from app.users.dao import UsersDAO
 from app.users.models import User
 from app.users.schemas import SUserRegister, SUserMail, SUserAuth, SUserIsAdmin, SUserID
@@ -52,7 +52,7 @@ async def logout_user(response: Response):
 
 @router.put("/add_admin/")
 async def add_admin(id_user: SUserID, is_admin: SUserIsAdmin, session: AsyncSession = TransactionSessionDep,
-                    user_data: User = Depends(get_current_admin_user)):
+                    user_data: User = Depends(get_current_super_admin_user)):
     rez = await UsersDAO.update(session=session, filters=id_user, values=is_admin)
     if rez is None:
         return {'message': f'Не удалось обновить запись!'}
