@@ -131,3 +131,11 @@
     ```bash
    tests/tests.py
    ```
+6. Запустите приложение FastAPI app/main.py:
+    ```bash
+   uvicorn app.main:app --reload
+   ```
+7. Для чтения документации перейдите по ссылке
+   ```браузер
+   http://127.0.0.1:8000/docs#/
+   ```
